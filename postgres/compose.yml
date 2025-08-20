@@ -1,0 +1,35 @@
+services:
+  database:
+    image: 'postgres:latest'
+    ports:
+      - ${POSTGRES_PORT:-5432}:5432
+    networks:
+      - postgres-network
+    environment:
+        POSTGRES_USER: root
+        POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - ${PG_ADMIN_PORT:-5433}:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    depends_on:
+      - database
+    networks:
+      - postgres-network
+    volumes:
+      - pg_admin_data:/var/lib/pgadmin/
+
+networks:
+  postgres-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pg_admin_data:
+
