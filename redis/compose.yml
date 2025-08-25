@@ -1,0 +1,12 @@
+services:
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - cache_data:/data
+
+volumes:
+  cache_data:
