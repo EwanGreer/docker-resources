@@ -3,8 +3,6 @@ services:
     image: 'postgres:latest'
     ports:
       - ${POSTGRES_PORT:-5432}:5432
-    networks:
-      - postgres-network
     environment:
         POSTGRES_USER: root
         POSTGRES_PASSWORD: password
@@ -20,14 +18,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password
     depends_on:
       - database
-    networks:
-      - postgres-network
     volumes:
       - pg_admin_data:/var/lib/pgadmin/
-
-networks:
-  postgres-network:
-    driver: bridge
 
 volumes:
   postgres_data:
