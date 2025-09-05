@@ -1,5 +1,6 @@
 services:
   database:
+    container_name: postgres
     image: 'postgres:latest'
     ports:
       - ${POSTGRES_PORT:-5432}:5432
@@ -10,6 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data/
 
   pgadmin:
+    container_name: pg-admin
     image: dpage/pgadmin4
     ports:
       - ${PG_ADMIN_PORT:-5433}:80
