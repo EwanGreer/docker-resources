@@ -1,0 +1,18 @@
+services:
+  production:
+    container_name: go-production
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+
+  development:
+    container_name: go-development
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "2345:2345"
+    volumes:
+      - .:/app
