@@ -13,6 +13,7 @@ A collection of reusable Docker Compose configurations and Dockerfile templates 
 - `redis/` — Compose for Redis with persistent volume
 - `kafka/` — Compose for Kafka (KRaft mode) + Kafka UI + topic init container
 - `nats/` — Compose for NATS with JetStream, stream init container, and nats-box CLI container
+- `observability/` — Compose for Grafana + Prometheus + Loki + Promtail + node-exporter
 
 ## Go Template
 
@@ -113,4 +114,57 @@ docker exec -it nats-box nats sub "orders.>"
 To re-run stream init after the stack is already up:
 ```bash
 NATS_STREAMS="orders:orders.>" docker compose -f nats/compose.yml up --force-recreate nats-init
+```
+
+## Observability
+
+Runs Grafana, Prometheus, Loki, Promtail, and node-exporter. Grafana at `http://localhost:3000` (`admin` / `admin`). Prometheus at `http://localhost:9090`. Loki API at `http://localhost:3100`.
+
+```bash
+docker compose -f observability/compose.yml up -d
+```
+
+Override ports and credentials:
+```bash
+GRAFANA_PORT=3001 PROMETHEUS_PORT=9091 LOKI_PORT=3101 \
+GF_SECURITY_ADMIN_PASSWORD=secret \
+docker compose -f observability/compose.yml up -d
+```
+
+Two dashboards are provisioned automatically:
+- **Node Metrics** — host CPU, memory, disk, load average, and network I/O via node-exporter
+- **Container Logs** — live log stream, per-container log rate, and error/warn filter via Promtail + Loki
+
+Promtail ships logs from all running Docker containers automatically. Dashboard JSON files live in `observability/grafana/provisioning/dashboards/` and hot-reload every 30 seconds — edit the JSON files directly rather than saving changes in the UI.
+
+### Integrating another stack
+
+The observability stack creates a Docker network named `observability`. Attach a service to it so Prometheus can scrape it by container name.
+
+**1. In the other stack's `compose.yml`:**
+```yaml
+services:
+  my-service:
+    ...
+    networks:
+      - default
+      - observability
+
+networks:
+  default:
+  observability:
+    name: observability
+    external: true
+```
+
+**2. Add a scrape job to `observability/prometheus.yml`:**
+```yaml
+  - job_name: my-service
+    static_configs:
+      - targets: ['my-service:8080']
+```
+
+**3. Reload Prometheus without restarting:**
+```bash
+curl -X POST http://localhost:9090/-/reload
 ```
