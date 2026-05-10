@@ -12,6 +12,7 @@ A collection of reusable Docker Compose configurations and Dockerfile templates 
 - `postgres/` — Compose for PostgreSQL + pgAdmin
 - `redis/` — Compose for Redis with persistent volume
 - `kafka/` — Compose for Kafka (KRaft mode) + Kafka UI + topic init container
+- `nats/` — Compose for NATS with JetStream, stream init container, and nats-box CLI container
 
 ## Go Template
 
@@ -19,8 +20,8 @@ The Go Dockerfile (`go/Dockerfile`) has four named stages:
 
 | Stage | Base | Purpose |
 |---|---|---|
-| `base` | `golang:1.25` | Downloads modules, copies source |
-| `builder` | `base` | Compiles to static binary (`CGO_ENABLED=0`) |
+| `base` | `golang:1.25` | Downloads modules, copies `*.go *.toml *.sh` from root |
+| `builder` | `base` | Compiles to static binary (`CGO_ENABLED=0`, `go build -o app ./`) |
 | `production` | `distroless/static-debian12:nonroot` | Minimal runtime image |
 | `development` | `base` | Installs `air` (hot-reload) + `dlv` (debugger) |
 
@@ -85,4 +86,31 @@ KAFKA_PORT=9092 KAFKA_UI_PORT=9090 docker compose -f kafka/compose.yml up -d
 To re-run topic init after the stack is already up:
 ```bash
 KAFKA_TOPICS="orders:3:1" docker compose -f kafka/compose.yml up --force-recreate kafka-init
+```
+
+## NATS
+
+Runs a single-node NATS broker with JetStream enabled. Monitoring JSON at `http://localhost:8222`. No browser UI — use `nats-box` for introspection.
+
+```bash
+NATS_STREAMS="orders:orders.> payments:payments.>" docker compose -f nats/compose.yml up -d
+```
+
+`NATS_STREAMS` is a space-separated list of `name:subjects` pairs. The subjects field is optional and defaults to `<name>.>`. Stream creation is handled by the `nats-init` container, which runs once and exits.
+
+Override ports:
+```bash
+NATS_PORT=4222 NATS_MONITOR_PORT=8222 docker compose -f nats/compose.yml up -d
+```
+
+`nats-box` is a persistent container with the `nats` CLI pre-configured to connect to the broker (`NATS_URL` is set automatically):
+```bash
+docker exec -it nats-box nats stream ls
+docker exec -it nats-box nats pub orders.new "hello"
+docker exec -it nats-box nats sub "orders.>"
+```
+
+To re-run stream init after the stack is already up:
+```bash
+NATS_STREAMS="orders:orders.>" docker compose -f nats/compose.yml up --force-recreate nats-init
 ```
