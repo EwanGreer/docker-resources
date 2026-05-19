@@ -1,0 +1,3 @@
+{$CADDY_DOMAIN:localhost} {
+	reverse_proxy whoami:80
+}
