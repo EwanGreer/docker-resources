@@ -2,7 +2,7 @@ services:
   kafka:
     container_name: kafka
     image: apache/kafka:latest
-    restart: always
+    restart: unless-stopped
     ports:
       - ${KAFKA_PORT:-19092}:19092
     environment:
@@ -42,7 +42,7 @@ services:
   kafka-ui:
     container_name: kafka-ui
     image: ghcr.io/kafbat/kafka-ui:latest
-    restart: always
+    restart: unless-stopped
     ports:
       - ${KAFKA_UI_PORT:-8080}:8080
     environment:

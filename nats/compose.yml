@@ -2,7 +2,7 @@ services:
   nats:
     container_name: nats
     image: nats:alpine
-    restart: always
+    restart: unless-stopped
     ports:
       - ${NATS_PORT:-4222}:4222
       - ${NATS_MONITOR_PORT:-8222}:8222
@@ -31,7 +31,7 @@ services:
   nats-box:
     container_name: nats-box
     image: natsio/nats-box:latest
-    restart: always
+    restart: unless-stopped
     depends_on:
       nats:
         condition: service_healthy
