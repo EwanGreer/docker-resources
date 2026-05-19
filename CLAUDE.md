@@ -13,6 +13,7 @@ A collection of reusable Docker Compose configurations and Dockerfile templates 
 - `redis/` — Compose for Redis with persistent volume
 - `kafka/` — Compose for Kafka (KRaft mode) + Kafka UI + topic init container
 - `nats/` — Compose for NATS with JetStream, stream init container, and nats-box CLI container
+- `networking/` — Compose for Caddy and Traefik reverse proxies with whoami demo service
 - `observability/` — Compose for Grafana + Prometheus + Loki + Promtail + node-exporter
 
 ## Go Template
@@ -114,6 +115,75 @@ docker exec -it nats-box nats sub "orders.>"
 To re-run stream init after the stack is already up:
 ```bash
 NATS_STREAMS="orders:orders.>" docker compose -f nats/compose.yml up --force-recreate nats-init
+```
+
+## Networking
+
+Two reverse proxy options — Caddy and Traefik — each in a separate compose file with a `whoami` demo service for testing.
+
+### Caddy
+
+Caddy handles TLS automatically. For local dev it serves on HTTP; for production, set `CADDY_DOMAIN` to a real domain and Caddy provisions a Let's Encrypt certificate.
+
+```bash
+# Local dev (HTTP on localhost)
+docker compose -f networking/compose.caddy.yml up -d
+
+# Production (automatic HTTPS)
+CADDY_DOMAIN=example.com docker compose -f networking/compose.caddy.yml up -d
+```
+
+Override ports:
+```bash
+CADDY_HTTP_PORT=8080 CADDY_HTTPS_PORT=8443 docker compose -f networking/compose.caddy.yml up -d
+```
+
+Routing is configured in `networking/Caddyfile`. The default config proxies all traffic to the `whoami` container.
+
+### Traefik
+
+Traefik discovers services via Docker labels. Dashboard at `http://localhost:8080`.
+
+```bash
+# Local dev (HTTP on localhost)
+docker compose -f networking/compose.traefik.yml up -d
+
+# Production (Let's Encrypt via ACME)
+TRAEFIK_DOMAIN=example.com ACME_EMAIL=you@example.com docker compose -f networking/compose.traefik.yml up -d
+```
+
+Override ports:
+```bash
+TRAEFIK_HTTP_PORT=8080 TRAEFIK_HTTPS_PORT=8443 TRAEFIK_DASHBOARD_PORT=9090 \
+docker compose -f networking/compose.traefik.yml up -d
+```
+
+To expose a service through Traefik, add labels to it:
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.my-service.rule=Host(`my-service.example.com`)"
+  - "traefik.http.routers.my-service.entrypoints=web"
+  - "traefik.http.services.my-service.loadbalancer.server.port=8080"
+```
+
+### Integrating with other stacks
+
+Both compose files create a Docker network named `networking`. Attach services from other stacks to it:
+
+```yaml
+services:
+  my-service:
+    ...
+    networks:
+      - default
+      - networking
+
+networks:
+  default:
+  networking:
+    name: networking
+    external: true
 ```
 
 ## Observability
