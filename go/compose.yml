@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      args:
+        APP_PKG: ${APP_PKG:-./}
 
   development:
     container_name: go-development
@@ -16,3 +18,5 @@ services:
       - "2345:2345"
     volumes:
       - .:/app
+    environment:
+      - APP_PKG=${APP_PKG:-./}

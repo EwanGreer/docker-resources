@@ -22,8 +22,8 @@ The Go Dockerfile (`go/Dockerfile`) has four named stages:
 
 | Stage | Base | Purpose |
 |---|---|---|
-| `base` | `golang:1.25` | Downloads modules, copies `*.go *.toml *.sh` from root |
-| `builder` | `base` | Compiles to static binary (`CGO_ENABLED=0`, `go build -o app ./`) |
+| `base` | `golang:1.25` | Downloads modules, copies full source tree |
+| `builder` | `base` | Compiles to static binary (`CGO_ENABLED=0`, configurable `APP_PKG`) |
 | `production` | `distroless/static-debian12:nonroot` | Minimal runtime image |
 | `development` | `base` | Installs `air` (hot-reload) + `dlv` (debugger) |
 
@@ -32,7 +32,7 @@ The Go Dockerfile (`go/Dockerfile`) has four named stages:
 The development container runs `docker-entrypoint.sh`, which generates a temporary `.air.toml` and launches `air` driving `dlv` on port `2345`. Key environment overrides:
 
 ```bash
-APP_PKG=./cmd/server   # main package path inside the container
+APP_PKG=./             # main package path (or ./cmd/server, etc.)
 APP_BIN=/tmp/app       # output binary path
 DLV_ADDR=0.0.0.0:2345 # Delve listen address (mapped in compose.yml)
 AIR_DELAY_MS=500       # debounce rebuild delay (ms)
@@ -41,8 +41,11 @@ AIR_DELAY_MS=500       # debounce rebuild delay (ms)
 The source tree is bind-mounted into `/app`, so edits on the host trigger live rebuilds inside the container.
 
 ```bash
-# Production image
+# Production image (default: builds ./)
 docker compose -f go/compose.yml up production
+
+# Production image with custom main package
+APP_PKG=./cmd/server docker compose -f go/compose.yml up production
 
 # Development image (live reload + remote debug on :2345)
 docker compose -f go/compose.yml up development

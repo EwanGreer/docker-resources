@@ -6,7 +6,7 @@ set -euo pipefail
 # dlv debug ./ --output="./__debug_bin" --headless --continue --api-version=2 --accept-multiclient --listen=:2345
 
 # ---- Configurable defaults (override via environment) ----
-: "${APP_PKG:=./cmd/server}"                     # main package path
+: "${APP_PKG:=./}"                               # main package path
 : "${APP_BIN:=/tmp/app}"                         # compiled binary path inside container
 : "${DLV_ADDR:=0.0.0.0:2345}"                    # delve listen address
 : "${AIR_TMPDIR:=/tmp/air}"                      # air temp dir
