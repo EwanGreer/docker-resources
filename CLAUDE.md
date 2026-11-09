@@ -15,6 +15,8 @@ A collection of reusable Docker Compose configurations and Dockerfile templates 
 - `nats/` — Compose for NATS with JetStream, stream init container, and nats-box CLI container
 - `networking/` — Compose for Caddy and Traefik reverse proxies with whoami demo service
 - `observability/` — Compose for Grafana + Prometheus + Loki + Promtail + node-exporter
+- `localstack/` — Compose for LocalStack Pro
+- `ministack/` — Compose for MiniStack AWS emulator + Terraform example
 
 ## Go Template
 
@@ -241,3 +243,26 @@ networks:
 ```bash
 curl -X POST http://localhost:9090/-/reload
 ```
+
+## MiniStack
+
+Runs the MiniStack AWS emulator (a free LocalStack alternative) on `http://localhost:4566`, plus the StackPort web UI at `http://localhost:8080`.
+
+```bash
+docker compose -f ministack/compose.yml up -d
+```
+
+MiniStack uses the Docker socket to run real containers for RDS, ECS, and Lambda. State and S3 objects persist in `ministack/data/`.
+
+### Terraform example
+
+`ministack/terraform/` starts five resources: an S3 bucket, a Postgres RDS instance (a real Postgres container), an SQS queue, an EC2 instance, and a Secrets Manager secret holding the generated database password.
+
+```bash
+cd ministack/terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+The AWS provider points every service endpoint at `http://localhost:4566` and uses test credentials. Names and region are variables in `variables.tf`. Host ports for database instances are allocated starting at `15432` (set `RDS_BASE_PORT` in compose.yml to change) — check `docker ps` for the actual port.

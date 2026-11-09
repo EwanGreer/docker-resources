@@ -1,0 +1,28 @@
+services:
+  ministack:
+    image: ministackorg/ministack:latest
+    container_name: ministack
+    ports:
+      - "127.0.0.1:4566:4566"  # Single port for all 60+ services
+    environment:
+      - PERSIST_STATE=1        # Enable state persistence (like LocalStack's LOCALSTACK_PERSISTENCE)
+      - S3_PERSIST=1           # Persist S3 data specifically
+      - LOG_LEVEL=INFO         # Set logging verbosity
+      - LAMBDA_EXECUTOR=docker # Use Docker to execute Lambda functions
+    volumes:
+      - "./data/state:/tmp/ministack-state"         # Persist service state
+      - "./data/s3:/tmp/ministack-data/s3"          # Persist S3 objects
+      - "/var/run/docker.sock:/var/run/docker.sock" # Required for real containers (RDS, ECS, Lambda)
+
+  stackport:
+    image: davireis/stackport
+    container_name: stackport
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - AWS_ENDPOINT_URL=http://ministack:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - ministack
